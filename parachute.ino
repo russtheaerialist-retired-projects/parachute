@@ -1,11 +1,12 @@
-#include "Bounce2.h"
-#include "Servo.h"
+
+#include <Servo.h>
 #include <avr/sleep.h>
+#include <Bounce2.h>
 
 
 #define SERVO_PIN 9
 #define READY_PIN 13
-#define ARM_PIN 12
+#define ARM_PIN 2
 #define APOGEE_PIN 11
 #define VERTICAL_PIN A0
 
@@ -23,22 +24,32 @@ int value;
 void setup()
 {
   Serial.begin(9600);
+  
   pinMode(ARM_PIN, INPUT);
   digitalWrite(ARM_PIN, HIGH);  // Enable pull up resistor
   
-  
+  // Accel data for Z axis, ignore all others.
+  pinMode(VERTICAL_PIN, INPUT);
+  pinMode(APOGEE_PIN, INPUT);
   
   parachute.attach(SERVO_PIN);
   parachute.write(SERVO_READY);
   
   arm.attach(ARM_PIN);
   arm.interval(5);
+  
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Enable us to power down after parachute deployment to save battery power.
+}
+
+void pinInterrupt()
+{
+  detachInterrupt(0);
 }
 
 void loop_armed()
 {
   // get current acceleration
-  // value = analogRead(VERTICAL_PIN);
+  value = analogRead(VERTICAL_PIN);
   
   if (!triggered) {
     if (value > ACCELERATION_THRESHOLD) {
@@ -49,15 +60,15 @@ void loop_armed()
   if (triggered) {
     value = digitalRead(APOGEE_PIN);
     if (value == HIGH) {
-      // deploy parachute
-      
+      parachute.write(SERVO_DEPLOY);
       delay(1000);
-      noInterrupts();
+      attachInterrupt(0, pinInterrupt, HIGH);
       sleep_enable();
       sleep_mode();
+      sleep_disable();
     }
   }
-  
+
 }
 
 void loop_unarmed()
@@ -80,12 +91,12 @@ void loop()
     if (button_state) {
       // Transition to armed state
       digitalWrite(READY_PIN, HIGH);
-    } else {
+      } else {
       // Transition to unarmed state
       parachute.write(SERVO_READY);
     }   
     armed = button_state;
   }
-  
+
   armed ? loop_armed() : loop_unarmed();
 }
