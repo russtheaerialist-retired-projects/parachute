@@ -64,7 +64,7 @@ void loop_armed()
 
       digitalWrite(READY_PIN, LOW);
 
-      attachInterrupt(ARM_PIN, pinInterrupt, HIGH);
+      attachInterrupt(0, pinInterrupt, HIGH);
       delay(100);
       set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Enable us to power down after parachute deployment to save battery power.
       sleep_enable();
