@@ -23,7 +23,6 @@ int value;
 
 void setup()
 {
-  Serial.begin(9600);
   
   pinMode(ARM_PIN, INPUT);
   digitalWrite(ARM_PIN, HIGH);  // Enable pull up resistor
@@ -38,7 +37,7 @@ void setup()
   arm.attach(ARM_PIN);
   arm.interval(5);
   
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Enable us to power down after parachute deployment to save battery power.
+  
 }
 
 void pinInterrupt()
@@ -62,10 +61,19 @@ void loop_armed()
     if (value == HIGH) {
       parachute.write(SERVO_DEPLOY);
       delay(1000);
-      attachInterrupt(0, pinInterrupt, HIGH);
+
+      digitalWrite(READY_PIN, LOW);
+
+      attachInterrupt(ARM_PIN, pinInterrupt, HIGH);
+      delay(100);
+      set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Enable us to power down after parachute deployment to save battery power.
       sleep_enable();
       sleep_mode();
       sleep_disable();
+      
+      // Reset the state
+      triggered = false;
+      parachute.write(SERVO_READY);
     }
   }
 
@@ -83,9 +91,6 @@ void loop()
 {
   arm.update();
   button_state = arm.read() == LOW;
-  Serial.print(button_state);
-  Serial.print(" => ");
-  Serial.println(armed);
   
   if (button_state != armed) {
     if (button_state) {
