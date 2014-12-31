@@ -12,7 +12,7 @@
 
 #define SERVO_READY 0
 #define SERVO_DEPLOY 180
-#define ACCELERATION_THRESHOLD 150
+#define ACCELERATION_THRESHOLD 600
 
 Servo parachute;
 Bounce arm;
@@ -23,7 +23,7 @@ int value;
 
 void setup()
 {
-  
+  Serial.begin(9600);
   pinMode(ARM_PIN, INPUT);
   digitalWrite(ARM_PIN, HIGH);  // Enable pull up resistor
   
@@ -49,15 +49,18 @@ void loop_armed()
 {
   // get current acceleration
   value = analogRead(VERTICAL_PIN);
-  
+
   if (!triggered) {
     if (value > ACCELERATION_THRESHOLD) {
+      Serial.println("Launch detected");
       triggered = true;
     }
   }
   
   if (triggered) {
     value = digitalRead(APOGEE_PIN);
+    Serial.println(value);
+
     if (value == HIGH) {
       parachute.write(SERVO_DEPLOY);
       delay(1000);
@@ -94,6 +97,7 @@ void loop()
   
   if (button_state != armed) {
     if (button_state) {
+      Serial.println("Arming");
       // Transition to armed state
       digitalWrite(READY_PIN, HIGH);
       } else {
